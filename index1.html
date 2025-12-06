@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>WhatsApp Embedded Signup</title>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+</head>
+<body>
+    <h3>WhatsApp Embedded Signup</h3>
+
+    <button id="launchBtn" style="background:#1877f2;color:#fff;padding:8px 16px;border-radius:6px;border:0;">Login with Facebook</button>
+
+    <script>// FB SDK init
+  window.fbAsyncInit = function() {
+    FB.init({
+        appId: '870014775406406',
+      autoLogAppEvents : true,
+      xfbml      : true,
+        version: 'v22.0'
+    });
+  };
+
+  // forward incoming postMessage events (from facebook) to host (WebView2)
+  window.addEventListener('message', function(event){
+    try {
+      var payload = { type: 'from_facebook_message', origin: event.origin, data: event.data };
+      if (window.chrome && chrome.webview && chrome.webview.postMessage) {
+        chrome.webview.postMessage(JSON.stringify(payload));
+      } else {
+        console.log('Host not available. Message:', payload);
+      }
+    } catch(e) {
+      console.log('forward message error', e);
+    }
+  }, false);
+
+  // When FB returns auth via fbLoginCallback, forward code to host
+  function fbLoginCallback(response) {
+    try {
+      if (response && response.authResponse && response.authResponse.code) {
+        var codePayload = { type: 'wa_auth_code', code: response.authResponse.code };
+        if (window.chrome && chrome.webview && chrome.webview.postMessage) {
+          chrome.webview.postMessage(JSON.stringify(codePayload));
+        } else {
+          console.log('Auth code:', response.authResponse.code);
+        }
+      } else {
+        var errPayload = { type: 'wa_auth_error', response: response };
+        if (window.chrome && chrome.webview && chrome.webview.postMessage) {
+          chrome.webview.postMessage(JSON.stringify(errPayload));
+        } else {
+          console.log('FB response (no code):', response);
+        }
+      }
+    } catch(e) {
+      console.log('fbLoginCallback error', e);
+    }
+  }
+
+  document.getElementById('launchBtn').addEventListener('click', function(){
+    FB.login(fbLoginCallback, {
+      config_id: '<CONFIGURATION_ID>',
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {} }
+    });
+  });</script>
+</body>
+</html>
